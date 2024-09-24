@@ -4,7 +4,7 @@ use plotters::drawing::IntoDrawingArea;
 use plotters::prelude::{ChartBuilder, Circle, GREEN, WHITE};
 use plotters::style::Color;
 use plotters_piston::{draw_piston_window, PistonBackend};
-use ydlidar_driver::run_driver;
+use ydlidar_driver::{run_driver, YdlidarModels};
 
 fn get_port_name() -> String {
     let matches = Command::new("LiDAR data receiver.")
@@ -26,7 +26,7 @@ const WINDOW_RANGE: f64 = 4000.;
 const FPS: u64 = 60;
 fn main() {
     let port_name = get_port_name();
-    let (driver_threads, scan_rx) = run_driver(&port_name);
+    let (driver_threads, scan_rx) = run_driver(&port_name, YdlidarModels::X2).unwrap();
 
     let mut window: PistonWindow = WindowSettings::new("LiDAR scan", [800, 800])
         .build()

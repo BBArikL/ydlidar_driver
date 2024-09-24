@@ -1,5 +1,5 @@
 use clap::{Arg, Command};
-use ydlidar_driver::run_driver;
+use ydlidar_driver::{run_driver, YdlidarModels};
 
 fn get_port_name() -> String {
     let matches = Command::new("LiDAR data receiver.")
@@ -20,7 +20,7 @@ fn get_port_name() -> String {
 fn main() {
     let port_name = get_port_name();
 
-    let (driver_threads, scan_rx) = run_driver(&port_name);
+    let (driver_threads, scan_rx) = run_driver(&port_name, YdlidarModels::X2).unwrap();
 
     for _ in 0..100 {
         let scan = scan_rx.recv().unwrap();
