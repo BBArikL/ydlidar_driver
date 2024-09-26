@@ -56,7 +56,7 @@ pub(crate) fn parse_packets(
             Err(_) => sleep_ms(10),
         }
 
-        if buffer.len() == 0 {
+        if buffer.is_empty() {
             continue;
         }
 
@@ -75,7 +75,7 @@ pub(crate) fn parse_packets(
             scan = Scan::new();
         }
 
-        if let Err(_) = err_if_checksum_mismatched(&packet) {
+        if err_if_checksum_mismatched(&packet).is_err() {
             scan.checksum_correct = false;
         }
 
@@ -87,7 +87,7 @@ pub(crate) fn parse_packets(
 }
 
 pub(crate) fn do_terminate(terminator_rx: &Receiver<bool>) -> bool {
-    terminator_rx.try_recv().unwrap_or_else(|_| false)
+    terminator_rx.try_recv().unwrap_or(false)
 }
 
 /// Function to join driver threads.
@@ -96,11 +96,11 @@ pub fn join(driver_threads: &mut DriverThreads) {
     driver_threads.reader_terminator_tx.send(true).unwrap();
     driver_threads.parser_terminator_tx.send(true).unwrap();
 
-    if !driver_threads.reader_thread.is_none() {
+    if driver_threads.reader_thread.is_some() {
         let thread = driver_threads.reader_thread.take().unwrap();
         thread.join().unwrap();
     }
-    if !driver_threads.receiver_thread.is_none() {
+    if driver_threads.receiver_thread.is_some() {
         let thread = driver_threads.receiver_thread.take().unwrap();
         thread.join().unwrap();
     }

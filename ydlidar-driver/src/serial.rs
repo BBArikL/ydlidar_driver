@@ -47,7 +47,7 @@ pub(crate) fn flush(port: &mut Box<dyn SerialPort>) -> Result<(), YDLidarError> 
         return Ok(());
     }
     let mut packet: Vec<u8> = vec![0; n_read];
-    port.read(packet.as_mut_slice())?;
+    port.read_exact(packet.as_mut_slice())?;
     Ok(())
 }
 

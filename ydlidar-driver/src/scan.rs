@@ -3,7 +3,7 @@ use crate::numeric::{calc_distance, degree_to_radian, to_angle};
 use ydlidar_data::scan::Scan;
 
 pub(crate) trait YdLidarScan {
-    fn new() -> Scan;
+    fn new() -> Self;
     fn push_angles(&mut self, packet: &[u8]);
     fn push_flags(&mut self, packet: &[u8]);
     fn push_intensities(&mut self, packet: &[u8]);

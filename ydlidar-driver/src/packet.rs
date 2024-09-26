@@ -16,7 +16,7 @@ fn get_packet_size(buffer: &VecDeque<u8>, start_index: usize) -> Result<usize, (
 }
 
 pub(crate) fn validate_response_header(
-    header: &Vec<u8>,
+    header: &[u8],
     maybe_response_length: Option<u8>,
     type_code: u8,
 ) -> Result<(), YDLidarError> {
@@ -52,7 +52,7 @@ fn calc_checksum(packet: &[u8]) -> u16 {
     let mut checksum: u16 = to_u16(packet[1], packet[0]);
     checksum ^= to_u16(packet[5], packet[4]);
     for i in 0..n_scan {
-        let s0 = packet[10 + 3 * i + 0];
+        let s0 = packet[10 + 3 * i];
         let s1 = packet[10 + 3 * i + 1];
         let s2 = packet[10 + 3 * i + 2];
         checksum ^= to_u16(0x00, s0);
@@ -72,11 +72,11 @@ pub(crate) fn is_beginning_of_cycle(packet: &[u8]) -> bool {
 }
 
 fn find_start_index(buffer: &VecDeque<u8>) -> Result<usize, ()> {
-    if buffer.len() == 0 {
+    if buffer.is_empty() {
         return Err(());
     }
     for i in 0..(buffer.len() - 1) {
-        let e0 = match buffer.get(i + 0) {
+        let e0 = match buffer.get(i) {
             Some(e) => e,
             None => continue,
         };
@@ -97,7 +97,7 @@ pub(crate) fn sendable_packet_range(buffer: &VecDeque<u8>) -> Result<(usize, usi
     Ok((start_index, end_index))
 }
 pub(crate) fn err_if_checksum_mismatched(packet: &[u8]) -> Result<(), YDLidarError> {
-    let calculated = calc_checksum(&packet);
+    let calculated = calc_checksum(packet);
     let expected = to_u16(packet[9], packet[8]);
     match calculated != expected {
         true => Err(YDLidarError::ChecksumMismatch(expected, calculated)),
