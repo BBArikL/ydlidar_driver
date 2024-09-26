@@ -1,23 +1,17 @@
 use crate::flags::to_flag;
 use crate::numeric::{calc_distance, degree_to_radian, to_angle};
-use crate::InterferenceFlag;
+use ydlidar_data::scan::Scan;
 
-/// Struct to hold one lap of lidar scan data.
-pub struct Scan {
-    /// Scan angle in radian.
-    pub angles_radian: Vec<f64>,
-    /// Distance to an object.
-    pub distances: Vec<u16>,
-    /// Interference status of the returned signal.
-    pub flags: Vec<InterferenceFlag>,
-    /// Return strength of the laser pulse.
-    pub intensities: Vec<u8>,
-    /// Checksum valiadtion result of the scan signal.
-    pub checksum_correct: bool,
+pub(crate) trait YdLidarScan {
+    fn new() -> Scan;
+    fn push_angles(&mut self, packet: &[u8]);
+    fn push_flags(&mut self, packet: &[u8]);
+    fn push_intensities(&mut self, packet: &[u8]);
+    fn push_distances(&mut self, packet: &[u8]);
 }
 
-impl Scan {
-    pub fn new() -> Scan {
+impl YdLidarScan for Scan {
+    fn new() -> Scan {
         Scan {
             angles_radian: Vec::new(),
             distances: Vec::new(),
@@ -27,8 +21,8 @@ impl Scan {
         }
     }
 
-    pub(crate) fn push_angles(&mut self, packet: &[u8]) {
-        let n = Scan::n_scan_samples(packet);
+    fn push_angles(&mut self, packet: &[u8]) {
+        let n = n_scan_samples(packet);
         if n == 1 {
             assert_eq!(packet[4], packet[6]);
             assert_eq!(packet[5], packet[7]);
@@ -54,30 +48,30 @@ impl Scan {
         }
     }
 
-    pub(crate) fn push_flags(&mut self, packet: &[u8]) {
-        for i in Scan::scan_indices(Scan::n_scan_samples(packet)) {
+    fn push_flags(&mut self, packet: &[u8]) {
+        for i in scan_indices(n_scan_samples(packet)) {
             self.flags.push(to_flag(packet[i + 1] & 0x03));
         }
     }
 
-    pub(crate) fn push_intensities(&mut self, packet: &[u8]) {
-        for i in Scan::scan_indices(Scan::n_scan_samples(packet)) {
+    fn push_intensities(&mut self, packet: &[u8]) {
+        for i in scan_indices(n_scan_samples(packet)) {
             self.intensities.push(packet[i])
         }
     }
 
-    pub(crate) fn push_distances(&mut self, packet: &[u8]) {
-        for i in Scan::scan_indices(Scan::n_scan_samples(packet)) {
+    fn push_distances(&mut self, packet: &[u8]) {
+        for i in scan_indices(n_scan_samples(packet)) {
             let d = calc_distance(packet[i + 1], packet[i + 2]);
             self.distances.push(d);
         }
     }
+}
 
-    fn scan_indices(n_scan_samples: usize) -> impl Iterator<Item = usize> {
-        (0..n_scan_samples).map(|i| 10 + i * 3)
-    }
+fn scan_indices(n_scan_samples: usize) -> impl Iterator<Item = usize> {
+    (0..n_scan_samples).map(|i| 10 + i * 3)
+}
 
-    pub(crate) fn n_scan_samples(packet: &[u8]) -> usize {
-        packet[3] as usize
-    }
+fn n_scan_samples(packet: &[u8]) -> usize {
+    packet[3] as usize
 }

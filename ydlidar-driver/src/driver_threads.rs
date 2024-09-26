@@ -1,5 +1,5 @@
 use crate::packet::{err_if_checksum_mismatched, is_beginning_of_cycle, sendable_packet_range};
-use crate::scan::Scan;
+use crate::scan::YdLidarScan;
 use crate::serial::{get_n_read, read, stop_scan_and_flush};
 use crate::time::sleep_ms;
 use crossbeam_channel::{Receiver, Sender};
@@ -7,6 +7,7 @@ use serialport::SerialPort;
 use std::collections::VecDeque;
 use std::sync::mpsc;
 use std::thread::JoinHandle;
+use ydlidar_data::Scan;
 
 /// Struct that contains driver threads.
 pub struct DriverThreads {
@@ -110,4 +111,3 @@ impl Drop for DriverThreads {
         join(self);
     }
 }
-

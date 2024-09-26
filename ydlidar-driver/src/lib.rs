@@ -1,7 +1,6 @@
 use std::sync::mpsc;
 
 mod constants;
-mod device_info;
 mod driver_threads;
 mod error;
 mod flags;
@@ -10,24 +9,19 @@ mod packet;
 mod scan;
 mod serial;
 mod time;
-mod ydlidar_models;
 
 use crate::constants::{
     HEADER_SIZE, LIDAR_ANS_LENGTH_DEVHEALTH, LIDAR_ANS_LENGTH_DEVINFO, LIDAR_ANS_TYPE_DEVHEALTH,
-    LIDAR_ANS_TYPE_DEVINFO, LIDAR_CMD_GET_DEVICE_HEALTH, LIDAR_CMD_GET_DEVICE_INFO
+    LIDAR_ANS_TYPE_DEVINFO, LIDAR_CMD_GET_DEVICE_HEALTH, LIDAR_CMD_GET_DEVICE_INFO,
 };
 use crate::driver_threads::{parse_packets, read_device_signal, DriverThreads};
-use crate::flags::{InterferenceFlag};
+pub use crate::error::YDLidarError;
 use crate::packet::validate_response_header;
-use crate::scan::Scan;
 use crate::serial::{read, send_command, start_scan, stop_scan_and_flush};
 use crate::time::sleep_ms;
-use crate::ydlidar_models::{model_baud_rate};
-use crossbeam_channel::{bounded};
+use crossbeam_channel::bounded;
 use serialport::SerialPort;
-
-pub use crate::ydlidar_models::YdlidarModels;
-pub use crate::error::YDLidarError;
+use ydlidar_data::{model_baud_rate, DeviceInfo, Scan, YdlidarModels};
 
 pub fn check_device_health(port: &mut Box<dyn SerialPort>) -> Result<(), YDLidarError> {
     send_command(port, LIDAR_CMD_GET_DEVICE_HEALTH)?;
@@ -45,9 +39,7 @@ pub fn check_device_health(port: &mut Box<dyn SerialPort>) -> Result<(), YDLidar
     }
 }
 
-pub fn get_device_info(
-    port: &mut Box<dyn SerialPort>,
-) -> Result<device_info::DeviceInfo, YDLidarError> {
+pub fn get_device_info(port: &mut Box<dyn SerialPort>) -> Result<DeviceInfo, YDLidarError> {
     send_command(port, LIDAR_CMD_GET_DEVICE_INFO)?;
     let header = read(port, HEADER_SIZE)?;
     validate_response_header(
@@ -56,7 +48,7 @@ pub fn get_device_info(
         LIDAR_ANS_TYPE_DEVINFO,
     )?;
     let info = read(port, LIDAR_ANS_LENGTH_DEVINFO.into())?;
-    Ok(device_info::DeviceInfo {
+    Ok(DeviceInfo {
         model_number: info[0],
         firmware_major_version: info[2],
         firmware_minor_version: info[1],
@@ -124,90 +116,72 @@ pub fn run_driver(
 
 #[cfg(test)]
 mod tests {
-    use std::io::{Read, Write};
     use super::*;
-    use serialport::TTYPort;
-    use crate::flags::to_flag;
+    use crate::scan::YdLidarScan;
     use crate::serial::flush;
+    use serialport::TTYPort;
+    use std::io::{Read, Write};
+    use ydlidar_data::InterferenceFlag;
 
     fn radian_to_degree(e: f64) -> f64 {
         e * 180. / std::f64::consts::PI
     }
 
     #[test]
-    fn test_to_flag() {
-        assert_eq!(to_flag(2), InterferenceFlag::SpecularReflection);
-        assert_eq!(to_flag(3), InterferenceFlag::AmbientLight);
-        assert_eq!(to_flag(1), InterferenceFlag::Nothing);
-    }
-
-    #[test]
     fn test_validate_response_header() {
-        assert!(
-            matches!(
-                validate_response_header(
-                    &vec![0xA5, 0x5A, 0x14, 0x00, 0x00, 0x00, 0x04],
-                    Some(0x14),
-                    0x04
-                ),
-                Ok(())
-            )
-        );
+        assert!(matches!(
+            validate_response_header(
+                &vec![0xA5, 0x5A, 0x14, 0x00, 0x00, 0x00, 0x04],
+                Some(0x14),
+                0x04
+            ),
+            Ok(())
+        ));
 
-        assert!(
-            matches!(
-                validate_response_header(
-                    &vec![0xA5, 0x5A, 0x14, 0x00, 0x00, 0x00, 0x04, 0x09],
-                    Some(0x14),
-                    0x04
-                ),
-                Err(YDLidarError::InvalidHeaderLength(8))
-            )
-        );
+        assert!(matches!(
+            validate_response_header(
+                &vec![0xA5, 0x5A, 0x14, 0x00, 0x00, 0x00, 0x04, 0x09],
+                Some(0x14),
+                0x04
+            ),
+            Err(YDLidarError::InvalidHeaderLength(8))
+        ));
 
-        assert!(
-            matches!(
-                validate_response_header(
-                    &vec![0xA6, 0x5A, 0x14, 0x00, 0x00, 0x00, 0x04],
-                    Some(0x14),
-                    0x04
-                ),
-                Err(YDLidarError::InvalidMagicNumber(_))
-            )
-        );
+        assert!(matches!(
+            validate_response_header(
+                &vec![0xA6, 0x5A, 0x14, 0x00, 0x00, 0x00, 0x04],
+                Some(0x14),
+                0x04
+            ),
+            Err(YDLidarError::InvalidMagicNumber(_))
+        ));
 
-        assert!(
-            matches!(
-                validate_response_header(
-                    &vec![0xA5, 0x2A, 0x14, 0x00, 0x00, 0x00, 0x04],
-                    Some(0x14),
-                    0x04
-                ),
-                Err(YDLidarError::InvalidMagicNumber(_))
-            )
-        );
+        assert!(matches!(
+            validate_response_header(
+                &vec![0xA5, 0x2A, 0x14, 0x00, 0x00, 0x00, 0x04],
+                Some(0x14),
+                0x04
+            ),
+            Err(YDLidarError::InvalidMagicNumber(_))
+        ));
 
-        assert!(
-            matches!(
-                validate_response_header(
-                    &vec![0xA5, 0x5A, 0x14, 0x00, 0x00, 0x00, 0x04],
-                    Some(0x12),
-                    0x04
-                ),
-                Err(YDLidarError::InvalidResponseLength(18, 20))
-            )
-        );
+        assert!(matches!(
+            validate_response_header(
+                &vec![0xA5, 0x5A, 0x14, 0x00, 0x00, 0x00, 0x04],
+                Some(0x12),
+                0x04
+            ),
+            Err(YDLidarError::InvalidResponseLength(18, 20))
+        ));
 
-        assert!(
-            matches!(
-                validate_response_header(
-                    &vec![0xA5, 0x5A, 0x14, 0x00, 0x00, 0x00, 0x08],
-                    Some(0x14),
-                    0x04
-                ),
-                Err(YDLidarError::InvalidTypeCode(4, 8))
-            )
-        );
+        assert!(matches!(
+            validate_response_header(
+                &vec![0xA5, 0x5A, 0x14, 0x00, 0x00, 0x00, 0x08],
+                Some(0x14),
+                0x04
+            ),
+            Err(YDLidarError::InvalidTypeCode(4, 8))
+        ));
     }
 
     #[test]
@@ -237,12 +211,10 @@ mod tests {
             .write(&[0xA5, 0x5A, 0x03, 0x00, 0x00, 0x00, 0x06, 0x02, 0x00, 0x00])
             .unwrap();
         sleep_ms(10);
-        assert!(
-            matches!(
-                check_device_health(&mut slave_ptr),
-                Err(YDLidarError::DeviceHealthError(0x02))
-            )
-        );
+        assert!(matches!(
+            check_device_health(&mut slave_ptr),
+            Err(YDLidarError::DeviceHealthError(0x02))
+        ));
     }
 
     #[test]
@@ -288,7 +260,6 @@ mod tests {
             [2, 0, 2, 2, 1, 1, 0, 3, 0, 1, 1, 1, 1, 1, 1, 1]
         );
     }
-
 
     #[test]
     fn test_run_driver_normal_data() {

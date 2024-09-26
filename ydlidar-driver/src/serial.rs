@@ -31,10 +31,7 @@ fn send_data(port: &mut Box<dyn SerialPort>, data: &[u8]) -> std::io::Result<usi
     port.write(data)
 }
 
-pub(crate) fn send_command(
-    port: &mut Box<dyn SerialPort>,
-    command: u8,
-) -> std::io::Result<usize> {
+pub(crate) fn send_command(port: &mut Box<dyn SerialPort>, command: u8) -> std::io::Result<usize> {
     let data: [u8; 2] = [LIDAR_CMD_SYNC_BYTE, command];
     send_data(port, &data)
 }
@@ -78,9 +75,9 @@ pub(crate) fn read(
 
 #[cfg(test)]
 mod tests {
-    use std::io::{Read, Write};
     use super::*;
     use serialport::TTYPort;
+    use std::io::{Read, Write};
     #[test]
     fn test_start_scan() {
         let (mut master, slave) = TTYPort::pair().expect("Unable to create ptty pair");

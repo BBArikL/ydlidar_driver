@@ -4,7 +4,8 @@ use plotters::drawing::IntoDrawingArea;
 use plotters::prelude::{ChartBuilder, Circle, GREEN, WHITE};
 use plotters::style::Color;
 use plotters_piston::{draw_piston_window, PistonBackend};
-use ydlidar_driver::{run_driver, YdlidarModels};
+use ydlidar_data::YdlidarModels;
+use ydlidar_driver::run_driver;
 
 fn get_port_name() -> String {
     let matches = Command::new("LiDAR data receiver.")

@@ -1,0 +1,12 @@
+[package]
+name = "ydlidar_data"
+version = "0.1.0"
+authors = ["Takeshi Ishita <ishitah.takeshi@gmail.com>"]
+edition = "2021"
+license = "Apache-2.0"
+description = "YDLiDAR Driver data in Rust"
+repository = "https://github.com/tier4/ydlidar_driver"
+homepage = "https://tier4.jp/"
+keywords = ["LiDAR", "Driver", "Localization", "Perception"]
+categories = ["lidar", "localization"]
+readme = "../README.md"

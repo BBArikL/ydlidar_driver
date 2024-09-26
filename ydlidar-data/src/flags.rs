@@ -8,11 +8,3 @@ pub enum InterferenceFlag {
     /// Interference was not observed
     Nothing,
 }
-
-pub(crate) fn to_flag(value: u8) -> InterferenceFlag {
-    match value {
-        2 => InterferenceFlag::SpecularReflection,
-        3 => InterferenceFlag::AmbientLight,
-        _ => InterferenceFlag::Nothing,
-    }
-}

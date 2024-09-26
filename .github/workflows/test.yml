@@ -18,5 +18,6 @@ jobs:
           sh ./installer.sh --default-toolchain none -y
           source "$HOME/.cargo/env"
           rustup default nightly
+          cd ydlidar-driver/
           cargo test
           cargo fmt --all -- --check

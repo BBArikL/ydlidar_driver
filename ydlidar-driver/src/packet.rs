@@ -143,6 +143,4 @@ mod tests {
         let expected = to_u16(packet[9], packet[8]);
         assert_eq!(checksum, expected);
     }
-
-
 }
