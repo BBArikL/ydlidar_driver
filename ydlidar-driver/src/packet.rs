@@ -1,4 +1,4 @@
-use crate::constants::{HEADER_SIZE, LIDAR_CMD_SYNC_BYTE};
+use crate::constants::{HEADER_SIZE, LIDAR_CMD_SYNC_BYTE, PACKET_HEADER_SIZE};
 use crate::error::YDLidarError;
 use crate::numeric::{to_string, to_u16};
 use std::collections::VecDeque;
@@ -42,6 +42,16 @@ pub(crate) fn validate_response_header(
             type_code.into(),
             header[6].into(),
         ));
+    }
+    Ok(())
+}
+
+fn validate_packet_response(header: &[u8]) -> Result<(), YDLidarError> {
+    if header.len() != PACKET_HEADER_SIZE {
+        return Err(YDLidarError::InvalidHeaderLength(header.len()));
+    }
+    if !is_packet_header(header[0], header[1]) {
+        return Err(YDLidarError::InvalidMagicNumber(to_string(&header[0..2])))
     }
     Ok(())
 }
@@ -108,6 +118,63 @@ pub(crate) fn err_if_checksum_mismatched(packet: &[u8]) -> Result<(), YDLidarErr
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn test_validate_response_header() {
+        assert!(matches!(
+            validate_response_header(
+                &vec![0xA5, 0x5A, 0x14, 0x00, 0x00, 0x00, 0x04],
+                Some(0x14),
+                0x04
+            ),
+            Ok(())
+        ));
+
+        assert!(matches!(
+            validate_response_header(
+                &vec![0xA5, 0x5A, 0x14, 0x00, 0x00, 0x00, 0x04, 0x09],
+                Some(0x14),
+                0x04
+            ),
+            Err(YDLidarError::InvalidHeaderLength(8))
+        ));
+
+        assert!(matches!(
+            validate_response_header(
+                &vec![0xA6, 0x5A, 0x14, 0x00, 0x00, 0x00, 0x04],
+                Some(0x14),
+                0x04
+            ),
+            Err(YDLidarError::InvalidMagicNumber(_))
+        ));
+
+        assert!(matches!(
+            validate_response_header(
+                &vec![0xA5, 0x2A, 0x14, 0x00, 0x00, 0x00, 0x04],
+                Some(0x14),
+                0x04
+            ),
+            Err(YDLidarError::InvalidMagicNumber(_))
+        ));
+
+        assert!(matches!(
+            validate_response_header(
+                &vec![0xA5, 0x5A, 0x14, 0x00, 0x00, 0x00, 0x04],
+                Some(0x12),
+                0x04
+            ),
+            Err(YDLidarError::InvalidResponseLength(18, 20))
+        ));
+
+        assert!(matches!(
+            validate_response_header(
+                &vec![0xA5, 0x5A, 0x14, 0x00, 0x00, 0x00, 0x08],
+                Some(0x14),
+                0x04
+            ),
+            Err(YDLidarError::InvalidTypeCode(4, 8))
+        ));
+    }
 
     #[test]
     fn test_calc_checksum() {

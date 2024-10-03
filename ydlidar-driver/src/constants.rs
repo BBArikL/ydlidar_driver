@@ -1,4 +1,5 @@
 pub(crate) const HEADER_SIZE: usize = 7;
+pub(crate) const PACKET_HEADER_SIZE: usize = 10;
 pub(crate) const LIDAR_CMD_GET_DEVICE_HEALTH: u8 = 0x92;
 pub(crate) const LIDAR_CMD_GET_DEVICE_INFO: u8 = 0x90;
 pub(crate) const LIDAR_CMD_SYNC_BYTE: u8 = 0xA5;

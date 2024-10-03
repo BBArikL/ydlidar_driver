@@ -15,11 +15,11 @@ pub enum YDLidarError {
     SerialError(serialport::Error),
     IoError(io::Error),
 }
-impl fmt::Display for YDLidarError {
+impl Display for YDLidarError {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match self {
             YDLidarError::InvalidHeaderLength(len) => write!(f, "Response header must be always seven bytes. Actually {} bytes.", len),
-            YDLidarError::InvalidMagicNumber(magic) => write!(f, "Header sign must start with 0xA5 0x5A. Observed = {}.", magic),
+            YDLidarError::InvalidMagicNumber(magic) => write!(f, "Header sign must start with 0xAA 0x55. Observed = {}.", magic),
             YDLidarError::InvalidResponseLength(expected, actual) => write!(f, "Expected response length of {} bytes but found {} bytes.",
                                                                             expected, actual),
             YDLidarError::InvalidTypeCode(expected, actual) => write!(f, "Expected type code {} but obtained {}.", expected, actual),

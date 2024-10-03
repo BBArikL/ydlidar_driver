@@ -21,3 +21,12 @@ pub(crate) fn to_string(data: &[u8]) -> String {
         .collect::<Vec<_>>()
         .join(" ")
 }
+
+pub(crate) fn correct_angle(angle: f64, distance: u16) -> f64 {
+    // Correcting the angle for the X2 lidar
+    if distance == 0 {
+        angle
+    } else {
+        angle + (21.8 * ((155.3 - distance as f64) / (155.3 * distance as f64))).atan()
+    }
+}

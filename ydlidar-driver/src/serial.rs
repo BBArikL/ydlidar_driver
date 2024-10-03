@@ -1,23 +1,22 @@
-use crate::constants::{
-    HEADER_SIZE, LIDAR_ANS_TYPE_MEASUREMENT, LIDAR_CMD_FORCE_STOP, LIDAR_CMD_SCAN, LIDAR_CMD_STOP,
-    LIDAR_CMD_SYNC_BYTE, N_READ_TRIALS,
-};
+use crate::constants::{LIDAR_CMD_SYNC_BYTE, N_READ_TRIALS};
 use crate::error::YDLidarError;
-use crate::packet::validate_response_header;
 use crate::time::sleep_ms;
 use serialport::SerialPort;
 use std::io::Read;
 
-pub(crate) fn start_scan(port: &mut Box<dyn SerialPort>) -> Result<(), YDLidarError> {
-    send_command(port, LIDAR_CMD_SCAN)?;
-    let header = read(port, HEADER_SIZE)?;
-    validate_response_header(&header, None, LIDAR_ANS_TYPE_MEASUREMENT)?;
+pub(crate) fn start_scan(_: &mut Box<dyn SerialPort>) -> Result<(), YDLidarError> {
+    // The X2 lidar does not support commands
+    //send_command(port, LIDAR_CMD_SCAN)?;
+    // let packet = read(port, PACKET_HEADER_SIZE)?;
+    // validate_packet_response(&packet)?;
+    //validate_response_header(&header, None, LIDAR_ANS_TYPE_MEASUREMENT)?;
     Ok(())
 }
 
-fn stop_scan(port: &mut Box<dyn SerialPort>) -> Result<(), YDLidarError> {
-    send_command(port, LIDAR_CMD_FORCE_STOP)?;
-    send_command(port, LIDAR_CMD_STOP)?;
+fn stop_scan(_: &mut Box<dyn SerialPort>) -> Result<(), YDLidarError> {
+    // The X2 lidar does not support commands
+    //send_command(port, LIDAR_CMD_FORCE_STOP)?;
+    //send_command(port, LIDAR_CMD_STOP)?;
     Ok(())
 }
 
@@ -78,33 +77,66 @@ mod tests {
     use super::*;
     use serialport::TTYPort;
     use std::io::{Read, Write};
+
     #[test]
-    fn test_start_scan() {
+    fn test_send_command() {
+        let (master, mut slave) = TTYPort::pair().expect("Unable to create ptty pair");
+        let mut master_ptr = Box::new(master) as Box<dyn SerialPort>;
+        send_command(&mut master_ptr, 0x68).unwrap();
+
+        sleep_ms(10);
+        let mut buf = [0u8; 2];
+        slave.read(&mut buf).unwrap();
+        assert_eq!(buf, [0xA5, 0x68]);
+    }
+
+    // #[test]
+    // fn test_start_scan() {
+    //     let (mut master, slave) = TTYPort::pair().expect("Unable to create ptty pair");
+    //     master
+    //         .write(&[0xA5, 0x5A, 0x05, 0x00, 0x00, 0x40, 0x81])
+    //         .unwrap();
+    //
+    //     let mut slave_ptr = Box::new(slave) as Box<dyn SerialPort>;
+    //     start_scan(&mut slave_ptr).unwrap();
+    //
+    //     sleep_ms(10);
+    //
+    //     let mut buf = [0u8; 2];
+    //     master.read(&mut buf).unwrap();
+    //     assert_eq!(buf, [0xA5, 0x60]);
+    // }
+    //
+    // #[test]
+    // fn test_stop_scan() {
+    //     let (master, mut slave) = TTYPort::pair().expect("Unable to create ptty pair");
+    //     let mut master_ptr = Box::new(master) as Box<dyn SerialPort>;
+    //     stop_scan(&mut master_ptr).unwrap();
+    //
+    //     sleep_ms(10);
+    //
+    //     let mut buf = [0u8; 4];
+    //     slave.read(&mut buf).unwrap();
+    //     assert_eq!(buf, [0xA5, 0x00, 0xA5, 0x65]);
+    // }
+
+    #[test]
+    fn test_flush() {
         let (mut master, slave) = TTYPort::pair().expect("Unable to create ptty pair");
         master
-            .write(&[0xA5, 0x5A, 0x05, 0x00, 0x00, 0x40, 0x81])
+            .write(&[0xA5, 0x5A, 0x03, 0x00, 0x00, 0x00, 0x06, 0x00, 0x00, 0x00])
             .unwrap();
 
         let mut slave_ptr = Box::new(slave) as Box<dyn SerialPort>;
-        start_scan(&mut slave_ptr).unwrap();
 
         sleep_ms(10);
 
-        let mut buf = [0u8; 2];
-        master.read(&mut buf).unwrap();
-        assert_eq!(buf, [0xA5, 0x60]);
-    }
+        assert_eq!(slave_ptr.bytes_to_read().unwrap(), 10);
+        flush(&mut slave_ptr).unwrap();
+        assert_eq!(slave_ptr.bytes_to_read().unwrap(), 0);
 
-    #[test]
-    fn test_stop_scan() {
-        let (master, mut slave) = TTYPort::pair().expect("Unable to create ptty pair");
-        let mut master_ptr = Box::new(master) as Box<dyn SerialPort>;
-        stop_scan(&mut master_ptr).unwrap();
-
-        sleep_ms(10);
-
-        let mut buf = [0u8; 4];
-        slave.read(&mut buf).unwrap();
-        assert_eq!(buf, [0xA5, 0x00, 0xA5, 0x65]);
+        // when zero bytes to read
+        flush(&mut slave_ptr).unwrap();
+        assert_eq!(slave_ptr.bytes_to_read().unwrap(), 0);
     }
 }

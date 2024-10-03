@@ -79,8 +79,8 @@ pub(crate) fn parse_packets(
             scan.checksum_correct = false;
         }
 
-        scan.push_angles(&packet);
         scan.push_distances(&packet);
+        scan.push_angles(&packet);
         scan.push_intensities(&packet);
         scan.push_flags(&packet);
     }
