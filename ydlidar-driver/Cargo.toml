@@ -22,6 +22,9 @@ ydlidar_data = {path = "../ydlidar-data"}
 [dev-dependencies]
 clap = { version = "3.1.6", features = ["derive"] }
 piston_window = "0.120.0"
+serde = { version = "1.0.210", features = ["std", "derive"] }
+serde_json = "1.0.128"
+ydlidar_data = {path = "../ydlidar-data", features = ["serde"]}
 
 [dev-dependencies.plotters-piston]
 git = "https://github.com/plotters-rs/plotters-piston.git"

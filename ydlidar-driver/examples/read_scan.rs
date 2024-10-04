@@ -1,6 +1,7 @@
 use clap::{Arg, Command};
 use ydlidar_data::YdlidarModels;
 use ydlidar_driver::run_driver;
+use std::net::{TcpListener, TcpStream, UdpSocket};
 
 fn get_port_name() -> String {
     let matches = Command::new("LiDAR data receiver.")
@@ -21,11 +22,15 @@ fn get_port_name() -> String {
 fn main() {
     let port_name = get_port_name();
 
+    let listener = TcpListener::bind("0.0.0.0:0").unwrap();
+    let (mut socket, _) = listener.accept().unwrap();
+
     let (driver_threads, scan_rx) = run_driver(&port_name, YdlidarModels::X2).unwrap();
 
-    for _ in 0..100 {
+    loop {
         let scan = scan_rx.recv().unwrap();
         println!("Received {:03} samples.", scan.distances.len());
+        serde_json::to_writer(&mut socket, &scan).unwrap();
     }
 
     drop(driver_threads);

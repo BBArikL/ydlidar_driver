@@ -10,3 +10,9 @@ homepage = "https://tier4.jp/"
 keywords = ["LiDAR", "Driver", "Localization", "Perception"]
 categories = ["lidar", "localization"]
 readme = "../README.md"
+
+[features]
+serde = ["serde/derive"]
+
+[dependencies]
+serde = { version = "1.0.210", features = ["derive"], optional = true}

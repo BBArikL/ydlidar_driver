@@ -1,3 +1,8 @@
+#[cfg(feature = "serde")]
+use serde::{Deserialize, Serialize};
+
+#[derive(Clone, Debug, PartialEq)]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 pub struct DeviceInfo {
     pub model_number: u8,
     pub firmware_major_version: u8,

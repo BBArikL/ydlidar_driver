@@ -1,7 +1,10 @@
 use crate::flags::InterferenceFlag;
+#[cfg(feature = "serde")]
+use serde::{Deserialize, Serialize};
 
 /// Struct to hold one lap of lidar scan data.
 #[derive(Clone, Debug, PartialEq)]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 pub struct Scan {
     /// Scan angle in radian.
     pub angles_radian: Vec<f64>,

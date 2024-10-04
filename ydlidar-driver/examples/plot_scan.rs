@@ -4,8 +4,10 @@ use plotters::drawing::IntoDrawingArea;
 use plotters::prelude::{ChartBuilder, Circle, GREEN, WHITE};
 use plotters::style::Color;
 use plotters_piston::{draw_piston_window, PistonBackend};
-use ydlidar_data::YdlidarModels;
-use ydlidar_driver::run_driver;
+use serde::Deserialize;
+use std::net::{TcpListener, TcpStream, UdpSocket};
+use serde_json::Deserializer;
+use ydlidar_data::Scan;
 
 fn get_port_name() -> String {
     let matches = Command::new("LiDAR data receiver.")
@@ -26,8 +28,11 @@ fn get_port_name() -> String {
 const WINDOW_RANGE: f64 = 4000.;
 const FPS: u64 = 60;
 fn main() {
-    let port_name = get_port_name();
-    let (driver_threads, scan_rx) = run_driver(&port_name, YdlidarModels::X2).unwrap();
+
+    let listener = TcpStream::connect("192.168.0.112:25").unwrap();
+
+    // let port_name = get_port_name();
+    //let (driver_threads, scan_rx) = run_driver(&port_name, YdlidarModels::X2).unwrap();
 
     let mut window: PistonWindow = WindowSettings::new("LiDAR scan", [800, 800])
         .build()
@@ -35,10 +40,14 @@ fn main() {
 
     window.set_max_fps(FPS);
     let draw = |b: PistonBackend| {
-        let scan = match scan_rx.try_recv() {
-            Ok(s) => s,
-            Err(_) => return Ok(()),
-        };
+        // let scan = match scan_rx.try_recv() {
+        //     Ok(s) => s,
+        //     Err(_) => return Ok(()),
+        // };
+        // let (_, _) = socket.recv_from(&mut buf).unwrap();
+        let scan: Scan = serde_json::from_reader(&listener).unwrap();
+        // let scan = Scan::deserialize(de).unwrap();
+
         println!("Received {} points.", scan.angles_radian.len());
 
         let root = b.into_drawing_area();
@@ -62,5 +71,5 @@ fn main() {
     };
 
     while let Some(_) = draw_piston_window(&mut window, draw) {}
-    drop(driver_threads);
+    // drop(driver_threads);
 }
