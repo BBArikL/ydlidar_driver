@@ -1,5 +1,6 @@
 use ydlidar_data::InterferenceFlag;
 
+#[allow(dead_code)] // Temporary fix until feature flags to select ydlidar
 pub(crate) fn to_flag(value: u8) -> InterferenceFlag {
     match value {
         2 => InterferenceFlag::SpecularReflection,

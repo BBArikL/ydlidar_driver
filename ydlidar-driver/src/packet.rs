@@ -1,3 +1,4 @@
+#[allow(dead_code)] // Temporary fix until feature flags to select ydlidar
 use crate::constants::{HEADER_SIZE, LIDAR_CMD_SYNC_BYTE, PACKET_HEADER_SIZE};
 use crate::error::YDLidarError;
 use crate::numeric::{to_string, to_u16};
@@ -46,12 +47,13 @@ pub(crate) fn validate_response_header(
     Ok(())
 }
 
+#[allow(dead_code)] // Temporary fix until feature flags to select ydlidar
 fn validate_packet_response(header: &[u8]) -> Result<(), YDLidarError> {
     if header.len() != PACKET_HEADER_SIZE {
         return Err(YDLidarError::InvalidHeaderLength(header.len()));
     }
     if !is_packet_header(header[0], header[1]) {
-        return Err(YDLidarError::InvalidMagicNumber(to_string(&header[0..2])))
+        return Err(YDLidarError::InvalidMagicNumber(to_string(&header[0..2])));
     }
     Ok(())
 }

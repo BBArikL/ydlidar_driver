@@ -29,7 +29,7 @@ impl Display for YDLidarError {
             YDLidarError::ChecksumMismatch(expected, calculated) => write!(f, "Checksum mismatched. Calculated = {:04X}, expected = {:04X}.", calculated, expected),
             YDLidarError::TimeoutError() => write!(f, "Operation timed out"),
             YDLidarError::IoError(err) => Display::fmt(&err, f),
-            YDLidarError::SerialError(err) => Display::fmt(&err,f),
+            YDLidarError::SerialError(err) => Display::fmt(&err, f),
         }
     }
 }

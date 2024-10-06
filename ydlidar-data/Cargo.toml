@@ -15,4 +15,4 @@ readme = "../README.md"
 serde = ["serde/derive"]
 
 [dependencies]
-serde = { version = "1.0.210", features = ["derive"], optional = true}
+serde = { version = "1.0.210", features = ["derive"], optional = true }

@@ -78,7 +78,7 @@ impl YdLidarScan for Scan {
     }
 }
 
-fn scan_indices(n_scan_samples: usize) -> impl Iterator<Item = usize> {
+fn scan_indices(n_scan_samples: usize) -> impl Iterator<Item=usize> {
     (0..n_scan_samples).map(|i| 10 + i * 3)
 }
 

@@ -7,6 +7,7 @@ use plotters_piston::{draw_piston_window, PistonBackend};
 use std::net::TcpStream;
 use ydlidar_data::Scan;
 
+#[allow(dead_code)] // Temporary fix until feature flags to select ydlidar
 fn get_port_name() -> String {
     let matches = Command::new("LiDAR data receiver.")
         .about("Reads data from LiDAR and plot scan.")
@@ -26,7 +27,6 @@ fn get_port_name() -> String {
 const WINDOW_RANGE: f64 = 4000.;
 const FPS: u64 = 60;
 fn main() {
-
     let listener = TcpStream::connect("192.168.0.112:2500").unwrap();
 
     // let port_name = get_port_name();
