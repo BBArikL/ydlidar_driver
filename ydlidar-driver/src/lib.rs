@@ -14,7 +14,8 @@ use crate::constants::{
     HEADER_SIZE, LIDAR_ANS_LENGTH_DEVHEALTH, LIDAR_ANS_LENGTH_DEVINFO, LIDAR_ANS_TYPE_DEVHEALTH,
     LIDAR_ANS_TYPE_DEVINFO, LIDAR_CMD_GET_DEVICE_HEALTH, LIDAR_CMD_GET_DEVICE_INFO,
 };
-use crate::driver_threads::{parse_packets, read_device_signal, DriverThreads};
+pub use crate::driver_threads::DriverThreads;
+use crate::driver_threads::{parse_packets, read_device_signal};
 pub use crate::error::YDLidarError;
 use crate::packet::validate_response_header;
 use crate::serial::{read, send_command, start_scan, stop_scan_and_flush};
