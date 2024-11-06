@@ -16,3 +16,5 @@ pub(crate) const LIDAR_ANS_LENGTH_DEVHEALTH: u8 = 3;
 #[allow(dead_code)] // Temporary fix until feature flags to select ydlidar
 pub(crate) const LIDAR_ANS_TYPE_MEASUREMENT: u8 = 0x81;
 pub(crate) const N_READ_TRIALS: usize = 3;
+// Specific for each lidar
+pub(crate) const LIDAR_MAX_DISTANCE_VALUE: u16 = 8000;

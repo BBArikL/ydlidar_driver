@@ -1,6 +1,7 @@
-use crate::numeric::{calc_distance, degree_to_radian, to_angle};
+use crate::numeric::{calc_distance, correct_angle, degree_to_radian, to_angle};
 use ydlidar_data::scan::Scan;
 use ydlidar_data::InterferenceFlag;
+use crate::constants::LIDAR_MAX_DISTANCE_VALUE;
 
 pub(crate) trait YdLidarScan {
     fn new() -> Self;
@@ -34,11 +35,11 @@ impl YdLidarScan for Scan {
         }
 
         let start_angle = to_angle(packet[4], packet[5]);
-        // let start_angle = correct_angle(start_angle, self.distances[self.angles_radian.len()]);
+        let start_angle = correct_angle(start_angle, self.distances[self.angles_radian.len()]);
         self.angles_radian.push(degree_to_radian(start_angle));
 
         let end_angle = to_angle(packet[6], packet[7]);
-        // let end_angle = correct_angle(end_angle, self.distances[self.angles_radian.len() + n - 2]);
+        let end_angle = correct_angle(end_angle, self.distances[self.angles_radian.len() + n - 2]);
 
         let angle_shift = if start_angle < end_angle { 0f64 } else { 360. };
         let angle_diff = end_angle - start_angle + angle_shift;
@@ -47,11 +48,10 @@ impl YdLidarScan for Scan {
         for i in 2..n {
             let angle_degree = (start_angle + (i as f64) * angle_rate) % 360.;
             let distance = self.distances[self.angles_radian.len()];
-            // let angle_degree = correct_angle(angle_degree, distance);
+            let angle_degree = correct_angle(angle_degree, distance);
             let angle_radian = degree_to_radian(angle_degree);
             self.angles_radian.push(angle_radian);
         }
-        self.angles_radian.push(degree_to_radian(end_angle));
     }
 
     fn push_flags(&mut self, packet: &[u8]) {
@@ -72,16 +72,19 @@ impl YdLidarScan for Scan {
 
     fn push_distances(&mut self, packet: &[u8]) {
         for i in scan_indices(n_scan_samples(packet)) {
-            self.distances
-                .push(calc_distance(packet[i + 1], packet[i + 2]));
+            let d = calc_distance(packet[i + 1], packet[i + 2]);
+            //if d > LIDAR_MAX_DISTANCE_VALUE || d == 0 {continue;}
+            self.distances.push(d);
         }
     }
 }
 
 fn scan_indices(n_scan_samples: usize) -> impl Iterator<Item=usize> {
-    (0..n_scan_samples).map(|i| 10 + i * 3)
+    (0..n_scan_samples).map(scan_index)
 }
 
-fn n_scan_samples(packet: &[u8]) -> usize {
+pub fn scan_index(idx: usize) -> usize {10 + idx * 3}
+
+pub fn n_scan_samples(packet: &[u8]) -> usize {
     packet[3] as usize
 }

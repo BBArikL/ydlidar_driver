@@ -26,7 +26,7 @@ fn get_port_name() -> String {
 const WINDOW_RANGE: f64 = 4000.;
 const FPS: u64 = 60;
 fn main() {
-    let listener = TcpStream::connect("192.168.0.112:1500").unwrap();
+    let listener = TcpStream::connect("192.168.0.117:1500").unwrap();
 
     // let port_name = get_port_name();
     //let (driver_threads, scan_rx) = run_driver(&port_name, YdlidarModels::X2).unwrap();
@@ -37,13 +37,7 @@ fn main() {
 
     window.set_max_fps(FPS);
     let draw = |b: PistonBackend| {
-        // let scan = match scan_rx.try_recv() {
-        //     Ok(s) => s,
-        //     Err(_) => return Ok(()),
-        // };
-        // let (_, _) = socket.recv_from(&mut buf).unwrap();
         let scan: Vec<(f64, f64)> = rmp_serde::from_read(&listener).unwrap();
-        // let scan = Scan::deserialize(de).unwrap();
 
         println!("Received {} points.", scan.len());
 
@@ -53,11 +47,11 @@ fn main() {
         let mut cc = ChartBuilder::on(&root)
             .build_cartesian_2d(-WINDOW_RANGE..WINDOW_RANGE, -WINDOW_RANGE..WINDOW_RANGE)?;
 
-        let circles = scan
+        let circles: Vec<_> = scan
             .iter()
             .map(|(x, y)| {
-                Circle::new((x, y), 2, GREEN.filled())
-            });
+                Circle::new((*x, *y), 2, GREEN.filled())
+            }).collect();
         cc.draw_series(circles)?;
 
         Ok(())

@@ -1,5 +1,4 @@
 use clap::{Arg, Command};
-use std::fs::File;
 use std::io::Write;
 use std::net::TcpListener;
 use ydlidar_data::YdlidarModels;
@@ -26,16 +25,13 @@ fn main() {
 
     let listener = TcpListener::bind("0.0.0.0:1500").unwrap();
     let (mut socket, _) = listener.accept().unwrap();
-    //let mut file = File::create("scans.json")?;
-    //file.write_all(b"Hello, world!")?;
 
     let (driver_threads, scan_rx) = run_driver(&port_name, YdlidarModels::X2).unwrap();
     let mut run = true;
 
     while run {
         let mut scan = scan_rx.recv().unwrap();
-        // write!(&mut file,"{}", scan);
-        let scans = scan
+        let scans: Vec<(f64, f64)> = scan
             .angles_radian
             .iter()
             .take(1000)
@@ -49,9 +45,6 @@ fn main() {
         let data = rmp_serde::to_vec(&scans).unwrap();
         println!("Data length is {}", data.len());
         socket.write_all(&data).unwrap();
-        // } else {
-        //     run = false;
-        // }
     }
 
     drop(driver_threads);
