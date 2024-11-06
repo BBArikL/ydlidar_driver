@@ -1,4 +1,6 @@
 use clap::{Arg, Command};
+use std::fs::File;
+use std::io::Write;
 use std::net::TcpListener;
 use ydlidar_data::YdlidarModels;
 use ydlidar_driver::run_driver;
@@ -22,19 +24,34 @@ fn get_port_name() -> String {
 fn main() {
     let port_name = get_port_name();
 
-    let listener = TcpListener::bind("0.0.0.0:0").unwrap();
+    let listener = TcpListener::bind("0.0.0.0:1500").unwrap();
     let (mut socket, _) = listener.accept().unwrap();
+    //let mut file = File::create("scans.json")?;
+    //file.write_all(b"Hello, world!")?;
 
     let (driver_threads, scan_rx) = run_driver(&port_name, YdlidarModels::X2).unwrap();
     let mut run = true;
 
     while run {
-        if let Ok(scan) = scan_rx.try_recv() {
-            println!("Received {:03} samples.", scan.distances.len());
-            serde_json::to_writer(&mut socket, &scan).unwrap();
-        } else {
-            run = false;
-        }
+        let mut scan = scan_rx.recv().unwrap();
+        // write!(&mut file,"{}", scan);
+        let scans = scan
+            .angles_radian
+            .iter()
+            .take(1000)
+            .zip(scan.distances.iter())
+            .map(|(w, d)| {
+                let x = (*d as f64) * f64::cos(*w);
+                let y = (*d as f64) * f64::sin(*w);
+                (x, y)
+            }).collect();
+
+        let data = rmp_serde::to_vec(&scans).unwrap();
+        println!("Data length is {}", data.len());
+        socket.write_all(&data).unwrap();
+        // } else {
+        //     run = false;
+        // }
     }
 
     drop(driver_threads);

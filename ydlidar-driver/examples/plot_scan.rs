@@ -5,7 +5,6 @@ use plotters::prelude::{ChartBuilder, Circle, GREEN, WHITE};
 use plotters::style::Color;
 use plotters_piston::{draw_piston_window, PistonBackend};
 use std::net::TcpStream;
-use ydlidar_data::Scan;
 
 #[allow(dead_code)] // Temporary fix until feature flags to select ydlidar
 fn get_port_name() -> String {
@@ -27,7 +26,7 @@ fn get_port_name() -> String {
 const WINDOW_RANGE: f64 = 4000.;
 const FPS: u64 = 60;
 fn main() {
-    let listener = TcpStream::connect("192.168.0.112:2500").unwrap();
+    let listener = TcpStream::connect("192.168.0.112:1500").unwrap();
 
     // let port_name = get_port_name();
     //let (driver_threads, scan_rx) = run_driver(&port_name, YdlidarModels::X2).unwrap();
@@ -43,10 +42,10 @@ fn main() {
         //     Err(_) => return Ok(()),
         // };
         // let (_, _) = socket.recv_from(&mut buf).unwrap();
-        let scan: Scan = serde_json::from_reader(&listener).unwrap();
+        let scan: Vec<(f64, f64)> = rmp_serde::from_read(&listener).unwrap();
         // let scan = Scan::deserialize(de).unwrap();
 
-        println!("Received {} points.", scan.angles_radian.len());
+        println!("Received {} points.", scan.len());
 
         let root = b.into_drawing_area();
         root.fill(&WHITE)?;
@@ -55,12 +54,8 @@ fn main() {
             .build_cartesian_2d(-WINDOW_RANGE..WINDOW_RANGE, -WINDOW_RANGE..WINDOW_RANGE)?;
 
         let circles = scan
-            .angles_radian
             .iter()
-            .zip(scan.distances.iter())
-            .map(|(w, d)| {
-                let x = (*d as f64) * f64::cos(*w);
-                let y = (*d as f64) * f64::sin(*w);
+            .map(|(x, y)| {
                 Circle::new((x, y), 2, GREEN.filled())
             });
         cc.draw_series(circles)?;

@@ -23,7 +23,7 @@ ydlidar_data = { path = "../ydlidar-data" }
 clap = { version = "4.5.19", features = ["derive"] }
 piston_window = "0.132.0"
 serde = { version = "1.0.210", features = ["std", "derive"] }
-serde_json = "1.0.128"
 ydlidar_data = { path = "../ydlidar-data", features = ["serde"] }
 plotters-piston = { git = "https://github.com/BBArikL/plotters-piston" }
 plotters = { version = "0.3.7", default-features = false, features = ["ttf", "all_series"] }
+rmp-serde = "1.3.0"
