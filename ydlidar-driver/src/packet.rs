@@ -117,6 +117,14 @@ pub(crate) fn err_if_checksum_mismatched(packet: &[u8]) -> Result<(), YDLidarErr
     }
 }
 
+pub(crate) fn scan_index(idx: usize) -> usize {
+    10 + idx * 3
+}
+
+pub(crate) fn n_scan_samples(packet: &[u8]) -> usize {
+    packet[3] as usize
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

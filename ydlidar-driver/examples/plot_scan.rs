@@ -1,7 +1,7 @@
 use clap::{Arg, Command};
 use piston_window::{EventLoop, PistonWindow, WindowSettings};
 use plotters::drawing::IntoDrawingArea;
-use plotters::prelude::{ChartBuilder, Circle, GREEN, WHITE};
+use plotters::prelude::{ChartBuilder, Circle, BLACK, BLUE, CYAN, GREEN, RED, WHITE, YELLOW};
 use plotters::style::Color;
 use plotters_piston::{draw_piston_window, PistonBackend};
 use std::net::TcpStream;
@@ -47,11 +47,15 @@ fn main() {
         let mut cc = ChartBuilder::on(&root)
             .build_cartesian_2d(-WINDOW_RANGE..WINDOW_RANGE, -WINDOW_RANGE..WINDOW_RANGE)?;
 
-        let circles: Vec<_> = scan
+        let mut circles: Vec<_> = scan
             .iter()
-            .map(|(x, y)| {
-                Circle::new((*x, *y), 2, GREEN.filled())
-            }).collect();
+            .map(|(x, y)| Circle::new((*x - 2000., *y), 2, GREEN.filled()))
+            .collect();
+        circles.push(Circle::new((-2000., 0.), 3, RED.filled()));
+        circles.push(Circle::new((-1950., 0.), 3, BLUE.filled()));
+        circles.push(Circle::new((-2000., 50.), 3, YELLOW.filled()));
+        circles.push(Circle::new((-2050., 0.), 3, BLACK.filled()));
+        circles.push(Circle::new((-2000., -50.), 3, CYAN.filled()));
         cc.draw_series(circles)?;
 
         Ok(())

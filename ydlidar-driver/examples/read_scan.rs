@@ -16,7 +16,7 @@ fn get_port_name() -> String {
         )
         .get_matches();
 
-    let port_name : &String = matches.get_one("port").unwrap();
+    let port_name: &String = matches.get_one("port").unwrap();
     port_name.to_string()
 }
 
@@ -27,24 +27,27 @@ fn main() {
     let (mut socket, _) = listener.accept().unwrap();
 
     let (driver_threads, scan_rx) = run_driver(&port_name, YdlidarModels::X2).unwrap();
-    let mut run = true;
 
-    while run {
-        let mut scan = scan_rx.recv().unwrap();
+    loop {
+        let scan = scan_rx.recv();
+        if scan.is_err() {
+            break;
+        }
+        let scan = scan.unwrap();
         let scans: Vec<(f64, f64)> = scan
             .angles_radian
             .iter()
             .take(1000)
             .zip(scan.distances.iter())
             .map(|(w, d)| {
-                let x = (*d as f64) * f64::cos(*w);
-                let y = (*d as f64) * f64::sin(*w);
-                (x, y)
-            }).collect();
-
+                let x = (*d as f64) * f64::cos(*w - std::f64::consts::PI / 2.0);
+                let y = (*d as f64) * f64::sin(*w - std::f64::consts::PI / 2.0);
+                (-x, y)
+            })
+            .collect();
         let data = rmp_serde::to_vec(&scans).unwrap();
-        println!("Data length is {}", data.len());
-        socket.write_all(&data).unwrap();
+        let res = socket.write_all(&data);
+        if res.is_err() {break;}
     }
 
     drop(driver_threads);
