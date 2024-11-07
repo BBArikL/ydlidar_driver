@@ -13,7 +13,7 @@ fn get_packet_size(buffer: &VecDeque<u8>, start_index: usize) -> Result<usize, (
         Some(n) => n,
         None => return Err(()),
     };
-    Ok((10 + n_scan_samples * 3) as usize)
+    Ok(10 + (*n_scan_samples as usize) * 3)
 }
 
 pub(crate) fn validate_response_header(

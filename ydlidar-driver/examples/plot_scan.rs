@@ -26,7 +26,7 @@ fn get_port_name() -> String {
 const WINDOW_RANGE: f64 = 4000.;
 const FPS: u64 = 60;
 fn main() {
-    let listener = TcpStream::connect("192.168.0.117:1500").unwrap();
+    let listener = TcpStream::connect("192.168.12.151:1500").unwrap();
 
     // let port_name = get_port_name();
     //let (driver_threads, scan_rx) = run_driver(&port_name, YdlidarModels::X2).unwrap();
