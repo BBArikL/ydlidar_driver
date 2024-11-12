@@ -59,7 +59,7 @@ pub fn get_device_info(port: &mut Box<dyn SerialPort>) -> Result<DeviceInfo, YDL
     })
 }
 
-/// Function to launch YDLiDAR. 
+/// Function to launch YDLiDAR.
 /// Uses default values of 1 and the corresponding LIDAR max rated distance for distance limits.
 /// See `run_driver_limits` for more information.
 /// # Arguments
@@ -70,7 +70,7 @@ pub fn run_driver(
     port_name: &str,
     model: YdlidarModels,
 ) -> Result<(DriverThreads, mpsc::Receiver<Scan>), YDLidarError> {
-    run_driver_limits(port_name, model,1, LIDAR_MAX_DISTANCE_VALUE)
+    run_driver_limits(port_name, model, 1, LIDAR_MAX_DISTANCE_VALUE)
 }
 
 /// Function to launch YDLiDAR with limit values.
@@ -122,7 +122,13 @@ pub fn run_driver_limits(
 
     let (scan_tx, scan_rx) = mpsc::sync_channel::<Scan>(10);
     let receiver_thread = Some(std::thread::spawn(move || {
-        parse_packets(scan_data_rx, parser_terminator_rx, scan_tx, min_distance, max_distance);
+        parse_packets(
+            scan_data_rx,
+            parser_terminator_rx,
+            scan_tx,
+            min_distance,
+            max_distance,
+        );
     }));
 
     let driver_threads = DriverThreads {

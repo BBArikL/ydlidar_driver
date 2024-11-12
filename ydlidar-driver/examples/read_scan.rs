@@ -47,7 +47,9 @@ fn main() {
             .collect();
         let data = rmp_serde::to_vec(&scans).unwrap();
         let res = socket.write_all(&data);
-        if res.is_err() {break;}
+        if res.is_err() {
+            break;
+        }
     }
 
     drop(driver_threads);
