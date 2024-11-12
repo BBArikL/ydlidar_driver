@@ -5,31 +5,56 @@ use plotters::prelude::{ChartBuilder, Circle, BLACK, BLUE, CYAN, GREEN, RED, WHI
 use plotters::style::Color;
 use plotters_piston::{draw_piston_window, PistonBackend};
 use std::net::TcpStream;
+use std::sync::mpsc::Receiver;
+use ydlidar_data::{Scan, YdlidarModel};
 
-#[allow(dead_code)] // Temporary fix until feature flags to select ydlidar
-fn get_port_name() -> String {
+use ydlidar_driver::{run_driver, DriverThreads};
+
+fn get_args() -> (Option<String>, Option<String>) {
     let matches = Command::new("LiDAR data receiver.")
         .about("Reads data from LiDAR and plot scan.")
         .disable_version_flag(true)
         .arg(
             Arg::new("port")
+                .long("port")
                 .help("The device path to a serial port")
                 .use_value_delimiter(false)
-                .required(true),
+                .exclusive(true),
+        )
+        .arg(
+            Arg::new("ip")
+                .long("ip")
+                .help("The remote machine where the lidar is being broadcasted")
+                .use_value_delimiter(false)
+                .exclusive(true),
         )
         .get_matches();
 
-    let port_name: &String = matches.get_one("port").unwrap();
-    port_name.to_string()
+    let port_name: Option<String> = matches.get_one("port").cloned();
+    let ip: Option<String> = matches.get_one("ip").cloned();
+    (port_name, ip)
 }
 
 const WINDOW_RANGE: f64 = 4000.;
 const FPS: u64 = 60;
 fn main() {
-    let listener = TcpStream::connect("192.168.12.151:1500").unwrap();
+    let (port_name, ip) = get_args();
 
-    // let port_name = get_port_name();
-    //let (driver_threads, scan_rx) = run_driver(&port_name, YdlidarModels::X2).unwrap();
+    let mut listener: Option<TcpStream> = None;
+    let mut driver_threads: Option<DriverThreads> = None;
+    let mut scan_rx: Option<Receiver<Scan>> = None;
+
+    match (port_name, ip) {
+        (_, Some(ip)) => {
+            listener = Some(TcpStream::connect(format!("{}:1500", ip)).unwrap());
+        }
+        (Some(port), _) => {
+            let driver = run_driver(&port, YdlidarModel::X2).unwrap();
+            driver_threads = Some(driver.0);
+            scan_rx = Some(driver.1);
+        }
+        (_, _) => panic!("Either --port or --ip has to be passed!"),
+    }
 
     let mut window: PistonWindow = WindowSettings::new("LiDAR scan", [800, 800])
         .build()
@@ -37,7 +62,28 @@ fn main() {
 
     window.set_max_fps(FPS);
     let draw = |b: PistonBackend| {
-        let scan: Vec<(f64, f64)> = rmp_serde::from_read(&listener).unwrap();
+        let scan: Vec<(f64, f64)>;
+        match (&listener, &scan_rx) {
+            (Some(listener), _) => {
+                scan = rmp_serde::from_read(listener).unwrap();
+            }
+            (_, Some(scan_rx)) => {
+                let raw_scan = scan_rx.recv().unwrap();
+                scan = raw_scan
+                    .angles_radian
+                    .iter()
+                    .zip(raw_scan.distances.iter())
+                    .map(|(w, d)| {
+                        let x = (*d as f64) * f64::cos(*w - std::f64::consts::PI / 2.0);
+                        let y = (*d as f64) * f64::sin(*w - std::f64::consts::PI / 2.0);
+                        (x, y)
+                    })
+                    .collect();
+            }
+            (None, None) => {
+                panic!("Either a TcpStream or a Receiver<Scan> should be set!");
+            }
+        }
 
         println!("Received {} points.", scan.len());
 
@@ -62,5 +108,8 @@ fn main() {
     };
 
     while let Some(_) = draw_piston_window(&mut window, draw) {}
-    // drop(driver_threads);
+
+    if driver_threads.is_some() {
+        drop(driver_threads);
+    }
 }

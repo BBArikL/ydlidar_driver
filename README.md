@@ -9,5 +9,5 @@ Driver for [YDLiDAR T-mini Pro](https://www.ydlidar.com/products/view/22.html) i
 ## Try the demo
 
 ```
-cargo run --example plot_scan /tty/<device file>
+cargo run --example plot_scan -- --port /tty/<device file>
 ```
