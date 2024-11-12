@@ -119,14 +119,9 @@ pub fn run_driver(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::scan::YdLidarScan;
     use serialport::TTYPort;
     use std::io::Write;
     use ydlidar_data::InterferenceFlag;
-
-    fn radian_to_degree(e: f64) -> f64 {
-        e * 180. / std::f64::consts::PI
-    }
 
     #[test]
     fn test_check_device_health() {

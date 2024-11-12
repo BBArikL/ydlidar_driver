@@ -99,13 +99,17 @@ pub(crate) fn parse_packets(
             let angle_degree = correct_angle(angle_degree, d);
             let angle_radian = degree_to_radian(angle_degree);
             scan.angles_radian.push(angle_radian);
+            // X2 does not provide Flag
+            scan.flags.push(InterferenceFlag::Nothing);
+            // X2 lidar does not provide intensity data, so we put 255
+            scan.intensities.push(255);
         } else {
             let start_angle = to_angle(packet[4], packet[5]);
             let end_angle = to_angle(packet[6], packet[7]);
             let angle_shift = if start_angle < end_angle { 0f64 } else { 360. };
             let angle_diff = end_angle - start_angle + angle_shift;
             let angle_rate: f64 = angle_diff / ((n - 1) as f64);
-            (1..n)
+            (0..n)
                 .map(|idx| (idx, scan_index(idx)))
                 .for_each(|(packet_idx, dist_idx)| {
                     let d = calc_distance(packet[dist_idx + 1], packet[dist_idx + 2]);
@@ -113,7 +117,7 @@ pub(crate) fn parse_packets(
                         return;
                     }
                     scan.distances.push(d);
-                    if packet_idx == 1 {
+                    if packet_idx == 0 {
                         let start_angle = correct_angle(start_angle, d);
                         scan.angles_radian.push(degree_to_radian(start_angle));
                     } else if packet_idx == n - 1 {
@@ -128,7 +132,7 @@ pub(crate) fn parse_packets(
                     // X2 does not provide Flag
                     scan.flags.push(InterferenceFlag::Nothing);
                     // X2 lidar does not provide intensity data, so we put 255
-                    scan.intensities.push(255)
+                    scan.intensities.push(255);
                 });
         }
     }
