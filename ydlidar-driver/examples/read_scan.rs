@@ -42,7 +42,7 @@ fn main() {
             .map(|(w, d)| {
                 let x = (*d as f64) * f64::cos(*w - std::f64::consts::PI / 2.0);
                 let y = (*d as f64) * f64::sin(*w - std::f64::consts::PI / 2.0);
-                (-x, y)
+                (x, y)
             })
             .collect();
         let data = rmp_serde::to_vec(&scans).unwrap();
