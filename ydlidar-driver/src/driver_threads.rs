@@ -1,4 +1,3 @@
-use crate::constants::LIDAR_MAX_DISTANCE_VALUE;
 use crate::numeric::{calc_distance, correct_angle, degree_to_radian, to_angle};
 use crate::packet::{
     err_if_checksum_mismatched, is_beginning_of_cycle, n_scan_samples, scan_index,
@@ -52,6 +51,8 @@ pub(crate) fn parse_packets(
     scan_data_rx: mpsc::Receiver<Vec<u8>>,
     parser_terminator_rx: Receiver<bool>,
     scan_tx: mpsc::SyncSender<Scan>,
+    min_distance: u16,
+    max_distance: u16,
 ) {
     let mut buffer = VecDeque::<u8>::new();
     let mut scan = Scan::new();
@@ -91,7 +92,7 @@ pub(crate) fn parse_packets(
             // assert_eq!(packet[5], packet[7]);
             let dist_idx = scan_index(0);
             let d = calc_distance(packet[dist_idx + 1], packet[dist_idx + 2]);
-            if d > LIDAR_MAX_DISTANCE_VALUE || d == 0 {
+            if d > max_distance || d < min_distance {
                 continue;
             }
             scan.distances.push(d);
@@ -113,7 +114,7 @@ pub(crate) fn parse_packets(
                 .map(|idx| (idx, scan_index(idx)))
                 .for_each(|(packet_idx, dist_idx)| {
                     let d = calc_distance(packet[dist_idx + 1], packet[dist_idx + 2]);
-                    if d > LIDAR_MAX_DISTANCE_VALUE || d == 0 {
+                    if d > max_distance || d < min_distance {
                         return;
                     }
                     scan.distances.push(d);

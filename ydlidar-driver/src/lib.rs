@@ -20,6 +20,7 @@ pub use crate::error::YDLidarError;
 use crate::packet::validate_response_header;
 use crate::serial::{read, send_command, start_scan, stop_scan_and_flush};
 use crate::time::sleep_ms;
+use constants::LIDAR_MAX_DISTANCE_VALUE;
 use crossbeam_channel::bounded;
 use serialport::SerialPort;
 use ydlidar_data::{model_baud_rate, DeviceInfo, Scan, YdlidarModels};
@@ -58,7 +59,9 @@ pub fn get_device_info(port: &mut Box<dyn SerialPort>) -> Result<DeviceInfo, YDL
     })
 }
 
-/// Function to launch YDLiDAR.
+/// Function to launch YDLiDAR. 
+/// Uses default values of 1 and the corresponding LIDAR max rated distance for distance limits.
+/// See `run_driver_limits` for more information.
 /// # Arguments
 ///
 /// * `port_name` - Serial port name such as `/dev/ttyUSB0`.
@@ -66,6 +69,22 @@ pub fn get_device_info(port: &mut Box<dyn SerialPort>) -> Result<DeviceInfo, YDL
 pub fn run_driver(
     port_name: &str,
     model: YdlidarModels,
+) -> Result<(DriverThreads, mpsc::Receiver<Scan>), YDLidarError> {
+    run_driver_limits(port_name, model,1, LIDAR_MAX_DISTANCE_VALUE)
+}
+
+/// Function to launch YDLiDAR with limit values.
+/// # Arguments
+///
+/// * `port_name` - Serial port name such as `/dev/ttyUSB0`.
+/// * `model` - Model
+/// * `min_distance` - Minimum distance to keep points (inclusive, e.g. 1 -> distances of 0 will be discarded)
+/// * `max_distance` - Maximum distance to keep points (inclusive, e.g. 5000 -> distances bigger than 5000 will be discarded)
+pub fn run_driver_limits(
+    port_name: &str,
+    model: YdlidarModels,
+    min_distance: u16,
+    max_distance: u16,
 ) -> Result<(DriverThreads, mpsc::Receiver<Scan>), YDLidarError> {
     let baud_rate = model_baud_rate(model);
     let maybe_port = serialport::new(port_name, baud_rate)
@@ -103,7 +122,7 @@ pub fn run_driver(
 
     let (scan_tx, scan_rx) = mpsc::sync_channel::<Scan>(10);
     let receiver_thread = Some(std::thread::spawn(move || {
-        parse_packets(scan_data_rx, parser_terminator_rx, scan_tx);
+        parse_packets(scan_data_rx, parser_terminator_rx, scan_tx, min_distance, max_distance);
     }));
 
     let driver_threads = DriverThreads {
