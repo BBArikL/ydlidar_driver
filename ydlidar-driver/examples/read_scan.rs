@@ -1,7 +1,7 @@
 use clap::{Arg, Command};
 use std::io::Write;
 use std::net::TcpListener;
-use ydlidar_data::YdlidarModels;
+use ydlidar_data::YdlidarModel;
 use ydlidar_driver::run_driver;
 
 fn get_port_name() -> String {
@@ -26,7 +26,7 @@ fn main() {
     let listener = TcpListener::bind("0.0.0.0:1500").unwrap();
     let (mut socket, _) = listener.accept().unwrap();
 
-    let (driver_threads, scan_rx) = run_driver(&port_name, YdlidarModels::X2).unwrap();
+    let (driver_threads, scan_rx) = run_driver(&port_name, YdlidarModel::X2).unwrap();
 
     loop {
         let scan = scan_rx.recv();

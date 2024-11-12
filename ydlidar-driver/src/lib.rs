@@ -23,7 +23,7 @@ use crate::time::sleep_ms;
 use constants::LIDAR_MAX_DISTANCE_VALUE;
 use crossbeam_channel::bounded;
 use serialport::SerialPort;
-use ydlidar_data::{model_baud_rate, DeviceInfo, Scan, YdlidarModels};
+use ydlidar_data::{model_baud_rate, DeviceInfo, Scan, YdlidarModel};
 
 pub fn check_device_health(port: &mut Box<dyn SerialPort>) -> Result<(), YDLidarError> {
     send_command(port, LIDAR_CMD_GET_DEVICE_HEALTH)?;
@@ -68,7 +68,7 @@ pub fn get_device_info(port: &mut Box<dyn SerialPort>) -> Result<DeviceInfo, YDL
 /// * `model` - Model
 pub fn run_driver(
     port_name: &str,
-    model: YdlidarModels,
+    model: YdlidarModel,
 ) -> Result<(DriverThreads, mpsc::Receiver<Scan>), YDLidarError> {
     run_driver_limits(port_name, model, 1, LIDAR_MAX_DISTANCE_VALUE)
 }
@@ -82,7 +82,7 @@ pub fn run_driver(
 /// * `max_distance` - Maximum distance to keep points (inclusive, e.g. 5000 -> distances bigger than 5000 will be discarded)
 pub fn run_driver_limits(
     port_name: &str,
-    model: YdlidarModels,
+    model: YdlidarModel,
     min_distance: u16,
     max_distance: u16,
 ) -> Result<(DriverThreads, mpsc::Receiver<Scan>), YDLidarError> {
@@ -212,7 +212,7 @@ mod tests {
         sleep_ms(10);
 
         let name = slave.name().unwrap();
-        let (thread, scan_rx) = run_driver(&name, YdlidarModels::TMiniPro).unwrap();
+        let (thread, scan_rx) = run_driver(&name, YdlidarModel::TMiniPro).unwrap();
 
         let packet = [
             // beginning of a lap
@@ -337,7 +337,7 @@ mod tests {
         sleep_ms(10);
 
         let name = slave.name().unwrap();
-        let (thread, scan_rx) = run_driver(&name, YdlidarModels::TMiniPro).unwrap();
+        let (thread, scan_rx) = run_driver(&name, YdlidarModel::TMiniPro).unwrap();
 
         let packet = [
             // lap data
@@ -393,7 +393,7 @@ mod tests {
         sleep_ms(10);
 
         let name = slave.name().unwrap();
-        let (thread, scan_rx) = run_driver(&name, YdlidarModels::TMiniPro).unwrap();
+        let (thread, scan_rx) = run_driver(&name, YdlidarModel::TMiniPro).unwrap();
 
         let packet = [
             // lap data

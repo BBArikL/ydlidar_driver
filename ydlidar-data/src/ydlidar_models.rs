@@ -1,6 +1,6 @@
 #[non_exhaustive]
 #[repr(u8)]
-pub enum YdlidarModels {
+pub enum YdlidarModel {
     TMiniPro = 150,
     X2 = 210,
     // pub const F4: u8 = 1;
@@ -40,20 +40,20 @@ pub enum YdlidarModels {
     // pub const T15: u8 = 200;
 }
 
-pub fn model_baud_rate(model: YdlidarModels) -> u32 {
+pub fn model_baud_rate(model: YdlidarModel) -> u32 {
     match model {
-        YdlidarModels::TMiniPro => 230400,
-        YdlidarModels::X2 => 115200,
+        YdlidarModel::TMiniPro => 230400,
+        YdlidarModel::X2 => 115200,
     }
 }
 
-impl TryFrom<u8> for YdlidarModels {
+impl TryFrom<u8> for YdlidarModel {
     type Error = ();
 
     fn try_from(v: u8) -> Result<Self, ()> {
         match v {
-            x if x == YdlidarModels::TMiniPro as u8 => Ok(YdlidarModels::TMiniPro),
-            x if x == YdlidarModels::X2 as u8 => Ok(YdlidarModels::X2),
+            x if x == YdlidarModel::TMiniPro as u8 => Ok(YdlidarModel::TMiniPro),
+            x if x == YdlidarModel::X2 as u8 => Ok(YdlidarModel::X2),
             _ => Err(()),
         }
     }
