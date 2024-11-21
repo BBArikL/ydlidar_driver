@@ -27,6 +27,6 @@ pub(crate) fn correct_angle(angle: f64, distance: u16) -> f64 {
     if distance == 0 {
         angle
     } else {
-        angle + (21.8 * ((155.3 - distance as f64) / (155.3 * distance as f64))).atan()
+        angle - (21.8 * ((155.3 - distance as f64) / (155.3 * distance as f64))).atan()
     }
 }
