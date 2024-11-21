@@ -146,7 +146,6 @@ mod tests {
     use super::*;
     use serialport::TTYPort;
     use std::io::Write;
-    use ydlidar_data::InterferenceFlag;
 
     #[test]
     fn test_check_device_health() {
@@ -261,14 +260,6 @@ mod tests {
         //     assert!(f64::abs(degree - expected[i]) < 1e-8);
         // }
 
-        // X2 lidar does not provide intensity data, so we put 255
-        // let expected = vec![
-        //     0x14, 0xDD, 0xD4, 0xC3, 0xB3, 0x8E, 0x97, 0x9C, 0xA7, 0xAB, 0x93, 0x6D, 0x55, 0x57,
-        //     0x67, 0x80, 0x9B,
-        // ];
-        let expected = [255u8; 17];
-        assert_eq!(scan.intensities, expected);
-
         let expected = vec![
             ((0x62 as u16) >> 2) + ((0x02 as u16) << 6),
             ((0x76 as u16) >> 2) + ((0x03 as u16) << 6),
@@ -289,30 +280,6 @@ mod tests {
             ((0xE6 as u16) >> 2) + ((0x01 as u16) << 6),
         ];
         assert_eq!(scan.distances, expected);
-
-        // X2 lidar does not provide Interference data so we put no Interference
-        // let expected = vec![
-        //     InterferenceFlag::SpecularReflection,
-        //     InterferenceFlag::SpecularReflection,
-        //     InterferenceFlag::SpecularReflection,
-        //     InterferenceFlag::SpecularReflection,
-        //     InterferenceFlag::AmbientLight,
-        //     InterferenceFlag::SpecularReflection,
-        //     InterferenceFlag::SpecularReflection,
-        //     InterferenceFlag::SpecularReflection,
-        //     InterferenceFlag::SpecularReflection,
-        //     InterferenceFlag::SpecularReflection,
-        //     InterferenceFlag::SpecularReflection,
-        //     InterferenceFlag::SpecularReflection,
-        //     InterferenceFlag::SpecularReflection,
-        //     InterferenceFlag::SpecularReflection,
-        //     InterferenceFlag::SpecularReflection,
-        //     InterferenceFlag::SpecularReflection,
-        //     InterferenceFlag::SpecularReflection,
-        // ];
-        let expected = [const { InterferenceFlag::Nothing }; 17];
-        assert_eq!(scan.flags, expected);
-
         assert!(scan.checksum_correct);
 
         drop(thread);

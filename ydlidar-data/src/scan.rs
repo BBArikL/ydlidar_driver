@@ -1,4 +1,3 @@
-use crate::flags::InterferenceFlag;
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
 
@@ -10,10 +9,6 @@ pub struct Scan {
     pub angles_radian: Vec<f64>,
     /// Distance to an object (in mm, rounded down).
     pub distances: Vec<u16>,
-    /// Interference status of the returned signal.
-    pub flags: Vec<InterferenceFlag>,
-    /// Return strength of the laser pulse.
-    pub intensities: Vec<u8>,
     /// Checksum validation result of the scan signal.
     pub checksum_correct: bool,
 }

@@ -11,7 +11,7 @@ use serialport::SerialPort;
 use std::collections::VecDeque;
 use std::sync::mpsc;
 use std::thread::JoinHandle;
-use ydlidar_data::{InterferenceFlag, Scan};
+use ydlidar_data::Scan;
 
 /// Struct that contains driver threads.
 pub struct DriverThreads {
@@ -88,8 +88,6 @@ pub(crate) fn parse_packets(
         let n = n_scan_samples(&packet);
         if n == 1 {
             // Start Angle == End Angle
-            // assert_eq!(packet[4], packet[6]);
-            // assert_eq!(packet[5], packet[7]);
             let dist_idx = scan_index(0);
             let d = calc_distance(packet[dist_idx + 1], packet[dist_idx + 2]);
             if d > max_distance || d < min_distance {
@@ -100,10 +98,6 @@ pub(crate) fn parse_packets(
             let angle_degree = correct_angle(angle_degree, d);
             let angle_radian = degree_to_radian(angle_degree);
             scan.angles_radian.push(angle_radian);
-            // X2 does not provide Flag
-            scan.flags.push(InterferenceFlag::Nothing);
-            // X2 lidar does not provide intensity data, so we put 255
-            scan.intensities.push(255);
         } else {
             let start_angle = -to_angle(packet[4], packet[5]);
             let end_angle = -to_angle(packet[6], packet[7]);
@@ -130,10 +124,6 @@ pub(crate) fn parse_packets(
                         let angle_radian = degree_to_radian(angle_degree);
                         scan.angles_radian.push(angle_radian);
                     }
-                    // X2 does not provide Flag
-                    scan.flags.push(InterferenceFlag::Nothing);
-                    // X2 lidar does not provide intensity data, so we put 255
-                    scan.intensities.push(255);
                 });
         }
     }

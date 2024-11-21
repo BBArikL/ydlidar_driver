@@ -9,8 +9,6 @@ impl YdLidarScan for Scan {
         Scan {
             angles_radian: Vec::new(),
             distances: Vec::new(),
-            flags: Vec::new(),
-            intensities: Vec::new(),
             checksum_correct: true,
         }
     }
