@@ -37,6 +37,7 @@ pub(crate) fn read_device_signal(
         let n_read: usize = get_n_read(port).unwrap_or(0);
         if n_read == 0 {
             sleep_ms(100);
+            continue;
         }
 
         if let Ok(signal) = read(port, n_read) {
