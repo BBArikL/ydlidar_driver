@@ -36,7 +36,7 @@ pub(crate) fn read_device_signal(
 
         let n_read: usize = get_n_read(port).unwrap_or(0);
         if n_read == 0 {
-            continue;
+            sleep_ms(100);
         }
 
         if let Ok(signal) = read(port, n_read) {
@@ -59,7 +59,7 @@ pub(crate) fn parse_packets(
     while !do_terminate(&parser_terminator_rx) {
         match scan_data_rx.try_recv() {
             Ok(data) => buffer.extend(data),
-            Err(_) => sleep_ms(10),
+            Err(_) => sleep_ms(100),
         }
 
         if buffer.is_empty() {
@@ -68,11 +68,15 @@ pub(crate) fn parse_packets(
 
         let (start_index, n_packet_bytes) = match sendable_packet_range(&buffer) {
             Ok(t) => t,
-            Err(_) => continue,
+            Err(_) => {
+                sleep_ms(100);
+                continue;
+            }
         };
         buffer.drain(..start_index); // remove leading bytes
         if buffer.len() < n_packet_bytes {
             // insufficient buffer size to extract a packet
+            sleep_ms(100);
             continue;
         }
         let packet = buffer.drain(0..n_packet_bytes).collect::<Vec<_>>();
