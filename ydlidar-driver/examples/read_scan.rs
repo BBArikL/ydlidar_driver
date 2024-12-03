@@ -26,7 +26,7 @@ fn main() {
     let listener = TcpListener::bind("0.0.0.0:1500").unwrap();
     let (mut socket, _) = listener.accept().unwrap();
 
-    let (driver_threads, scan_rx) = run_driver(&port_name, YdlidarModel::X2).unwrap();
+    let (driver_threads, scan_rx) = run_driver(&port_name, YdlidarModel::X2, 200, 10).unwrap();
 
     loop {
         let scan = scan_rx.recv();

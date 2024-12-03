@@ -69,8 +69,17 @@ pub fn get_device_info(port: &mut Box<dyn SerialPort>) -> Result<DeviceInfo, YDL
 pub fn run_driver(
     port_name: &str,
     model: YdlidarModel,
+    scan_buffer: usize,
+    out_buffer: usize,
 ) -> Result<(DriverThreads, mpsc::Receiver<Scan>), YDLidarError> {
-    run_driver_limits(port_name, model, 1, LIDAR_MAX_DISTANCE_VALUE)
+    run_driver_limits(
+        port_name,
+        model,
+        1,
+        LIDAR_MAX_DISTANCE_VALUE,
+        scan_buffer,
+        out_buffer,
+    )
 }
 
 /// Function to launch YDLiDAR with limit values.
@@ -85,6 +94,8 @@ pub fn run_driver_limits(
     model: YdlidarModel,
     min_distance: u16,
     max_distance: u16,
+    scan_buffer: usize,
+    out_buffer: usize,
 ) -> Result<(DriverThreads, mpsc::Receiver<Scan>), YDLidarError> {
     let baud_rate = model_baud_rate(model);
     let maybe_port = serialport::new(port_name, baud_rate)
@@ -110,9 +121,9 @@ pub fn run_driver_limits(
     // check_device_health(&mut port)?;
     // get_device_info(&mut port)?;
 
-    let (reader_terminator_tx, reader_terminator_rx) = bounded(10);
-    let (parser_terminator_tx, parser_terminator_rx) = bounded(10);
-    let (scan_data_tx, scan_data_rx) = mpsc::sync_channel::<Vec<u8>>(200);
+    let (reader_terminator_tx, reader_terminator_rx) = bounded(1);
+    let (parser_terminator_tx, parser_terminator_rx) = bounded(1);
+    let (scan_data_tx, scan_data_rx) = mpsc::sync_channel::<Vec<u8>>(scan_buffer);
 
     start_scan(&mut port)?;
 
@@ -120,7 +131,7 @@ pub fn run_driver_limits(
         read_device_signal(&mut port, scan_data_tx, reader_terminator_rx);
     }));
 
-    let (scan_tx, scan_rx) = mpsc::sync_channel::<Scan>(10);
+    let (scan_tx, scan_rx) = mpsc::sync_channel::<Scan>(out_buffer);
     let receiver_thread = Some(std::thread::spawn(move || {
         parse_packets(
             scan_data_rx,
@@ -211,7 +222,7 @@ mod tests {
         sleep_ms(10);
 
         let name = slave.name().unwrap();
-        let (thread, scan_rx) = run_driver(&name, YdlidarModel::TMiniPro).unwrap();
+        let (thread, scan_rx) = run_driver(&name, YdlidarModel::TMiniPro, 200, 10).unwrap();
 
         let packet = [
             // beginning of a lap
@@ -304,7 +315,7 @@ mod tests {
         sleep_ms(10);
 
         let name = slave.name().unwrap();
-        let (thread, scan_rx) = run_driver(&name, YdlidarModel::TMiniPro).unwrap();
+        let (thread, scan_rx) = run_driver(&name, YdlidarModel::TMiniPro, 200, 10).unwrap();
 
         let packet = [
             // lap data
@@ -360,7 +371,7 @@ mod tests {
         sleep_ms(10);
 
         let name = slave.name().unwrap();
-        let (thread, scan_rx) = run_driver(&name, YdlidarModel::TMiniPro).unwrap();
+        let (thread, scan_rx) = run_driver(&name, YdlidarModel::TMiniPro, 200, 10).unwrap();
 
         let packet = [
             // lap data
