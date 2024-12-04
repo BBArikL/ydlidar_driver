@@ -71,6 +71,8 @@ pub fn run_driver(
     model: YdlidarModel,
     scan_buffer: usize,
     out_buffer: usize,
+    send_after: usize,
+    sleep: u64,
 ) -> Result<(DriverThreads, mpsc::Receiver<Scan>), YDLidarError> {
     run_driver_limits(
         port_name,
@@ -79,6 +81,8 @@ pub fn run_driver(
         LIDAR_MAX_DISTANCE_VALUE,
         scan_buffer,
         out_buffer,
+        send_after,
+        sleep,
     )
 }
 
@@ -96,6 +100,8 @@ pub fn run_driver_limits(
     max_distance: u16,
     scan_buffer: usize,
     out_buffer: usize,
+    send_after: usize,
+    sleep: u64,
 ) -> Result<(DriverThreads, mpsc::Receiver<Scan>), YDLidarError> {
     let baud_rate = model_baud_rate(model);
     let maybe_port = serialport::new(port_name, baud_rate)
@@ -128,7 +134,7 @@ pub fn run_driver_limits(
     start_scan(&mut port)?;
 
     let reader_thread = Some(std::thread::spawn(move || {
-        read_device_signal(&mut port, scan_data_tx, reader_terminator_rx);
+        read_device_signal(&mut port, scan_data_tx, reader_terminator_rx, sleep);
     }));
 
     let (scan_tx, scan_rx) = mpsc::sync_channel::<Scan>(out_buffer);
@@ -139,6 +145,8 @@ pub fn run_driver_limits(
             scan_tx,
             min_distance,
             max_distance,
+            send_after,
+            sleep,
         );
     }));
 
@@ -222,7 +230,7 @@ mod tests {
         sleep_ms(10);
 
         let name = slave.name().unwrap();
-        let (thread, scan_rx) = run_driver(&name, YdlidarModel::TMiniPro, 200, 10).unwrap();
+        let (thread, scan_rx) = run_driver(&name, YdlidarModel::TMiniPro, 200, 10, 0, 100).unwrap();
 
         let packet = [
             // beginning of a lap
@@ -315,7 +323,7 @@ mod tests {
         sleep_ms(10);
 
         let name = slave.name().unwrap();
-        let (thread, scan_rx) = run_driver(&name, YdlidarModel::TMiniPro, 200, 10).unwrap();
+        let (thread, scan_rx) = run_driver(&name, YdlidarModel::TMiniPro, 200, 10, 0, 100).unwrap();
 
         let packet = [
             // lap data
@@ -371,7 +379,7 @@ mod tests {
         sleep_ms(10);
 
         let name = slave.name().unwrap();
-        let (thread, scan_rx) = run_driver(&name, YdlidarModel::TMiniPro, 200, 10).unwrap();
+        let (thread, scan_rx) = run_driver(&name, YdlidarModel::TMiniPro, 200, 10, 0, 100).unwrap();
 
         let packet = [
             // lap data

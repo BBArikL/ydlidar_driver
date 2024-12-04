@@ -4,7 +4,7 @@ use crate::packet::{
     sendable_packet_range,
 };
 use crate::scan::YdLidarScan;
-use crate::serial::{get_n_read, read, stop_scan_and_flush};
+use crate::serial::{flush, get_n_read, read, stop_scan_and_flush};
 use crate::time::sleep_ms;
 use crossbeam_channel::{Receiver, Sender};
 use serialport::SerialPort;
@@ -25,6 +25,7 @@ pub(crate) fn read_device_signal(
     port: &mut Box<dyn SerialPort>,
     scan_data_tx: mpsc::SyncSender<Vec<u8>>,
     reader_terminator_rx: Receiver<bool>,
+    sleep: u64,
 ) {
     loop {
         if do_terminate(&reader_terminator_rx) {
@@ -36,13 +37,14 @@ pub(crate) fn read_device_signal(
 
         let n_read: usize = get_n_read(port).unwrap_or(0);
         if n_read == 0 {
-            sleep_ms(100);
+            sleep_ms(sleep);
             continue;
         }
 
         if let Ok(signal) = read(port, n_read) {
             if let Err(e) = scan_data_tx.send(signal) {
                 eprintln!("{e}");
+                flush(port).expect("Could not flush port!");
             }
         }
     }
@@ -54,13 +56,18 @@ pub(crate) fn parse_packets(
     scan_tx: mpsc::SyncSender<Scan>,
     min_distance: u16,
     max_distance: u16,
+    send_after: usize,
+    sleep: u64,
 ) {
     let mut buffer = VecDeque::<u8>::new();
     let mut scan = Scan::new();
     while !do_terminate(&parser_terminator_rx) {
         match scan_data_rx.try_recv() {
             Ok(data) => buffer.extend(data),
-            Err(_) => sleep_ms(100),
+            Err(_) => {
+                sleep_ms(sleep);
+                continue;
+            }
         }
 
         if buffer.is_empty() {
@@ -70,18 +77,20 @@ pub(crate) fn parse_packets(
         let (start_index, n_packet_bytes) = match sendable_packet_range(&buffer) {
             Ok(t) => t,
             Err(_) => {
-                sleep_ms(100);
+                sleep_ms(sleep);
                 continue;
             }
         };
         buffer.drain(..start_index); // remove leading bytes
         if buffer.len() < n_packet_bytes {
             // insufficient buffer size to extract a packet
-            sleep_ms(100);
+            sleep_ms(sleep);
             continue;
         }
         let packet = buffer.drain(0..n_packet_bytes).collect::<Vec<_>>();
-        if is_beginning_of_cycle(&packet) {
+        if is_beginning_of_cycle(&packet)
+            || (send_after != 0 && scan.angles_radian.len() >= send_after)
+        {
             scan_tx.send(scan).unwrap();
             scan = Scan::new();
         }

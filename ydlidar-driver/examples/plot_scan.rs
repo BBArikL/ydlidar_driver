@@ -49,7 +49,7 @@ fn main() {
             listener = Some(TcpStream::connect(format!("{}:1500", ip)).unwrap());
         }
         (Some(port), _) => {
-            let driver = run_driver(&port, YdlidarModel::X2, 200, 10).unwrap();
+            let driver = run_driver(&port, YdlidarModel::X2, 200, 10, 0, 100).unwrap();
             driver_threads = Some(driver.0);
             scan_rx = Some(driver.1);
         }
